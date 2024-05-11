@@ -8,38 +8,45 @@ using UnityEngine.SceneManagement;
 
 public class BasicSpawner : MonoBehaviour, INetworkRunnerCallbacks
 {
-    [SerializeField] private NetworkPrefabRef _playerPrefab;
-    private Dictionary<PlayerRef, NetworkObject> _spawnedCharacters = new Dictionary<PlayerRef, NetworkObject>();
+    [SerializeField] private NetworkPrefabRef networkPlayerPrefab;
+    private Dictionary<PlayerRef, NetworkObject> spawnedCharactersDictionary = new Dictionary<PlayerRef, NetworkObject>();
 
-    private NetworkRunner _runner;
+    private NetworkRunner networkRunner;
+    private bool _mouseButton0;
 
-    async void StartGame(GameMode mode)
+    async void StartGame(GameMode gameMode)
     {
         // Create the Fusion runner and let it know that we will be providing user input
-        _runner = gameObject.AddComponent<NetworkRunner>();
-        _runner.ProvideInput = true;
+        networkRunner = gameObject.AddComponent<NetworkRunner>();
+        networkRunner.ProvideInput = true;
 
         // Create the NetworkSceneInfo from the current scene
-        var scene = SceneRef.FromIndex(SceneManager.GetActiveScene().buildIndex);
-        var sceneInfo = new NetworkSceneInfo();
-        if (scene.IsValid)
+        SceneRef sceneRef = SceneRef.FromIndex(SceneManager.GetActiveScene().buildIndex);
+        NetworkSceneInfo networkSceneInfo = new NetworkSceneInfo();
+
+        if (sceneRef.IsValid)
         {
-            sceneInfo.AddSceneRef(scene, LoadSceneMode.Additive);
+            networkSceneInfo.AddSceneRef(sceneRef, LoadSceneMode.Additive);
         }
 
-        // Start or join (depends on gamemode) a session with a specific name
-        await _runner.StartGame(new StartGameArgs()
+        // Start or join (depends on game mode) a session with a specific name
+        await networkRunner.StartGame(new StartGameArgs()
         {
-            GameMode = mode,
+            GameMode = gameMode,
             SessionName = "TestRoom",
-            Scene = scene,
+            Scene = sceneRef,
             SceneManager = gameObject.AddComponent<NetworkSceneManagerDefault>()
         });
     }
 
+    private void Update()
+    {
+        _mouseButton0 = _mouseButton0 | Input.GetMouseButton(0);
+    }
+
     private void OnGUI()
     {
-        if (_runner == null)
+        if (networkRunner == null)
         {
             if (GUI.Button(new Rect(0, 0, 200, 40), "Host"))
             {
@@ -84,7 +91,7 @@ public class BasicSpawner : MonoBehaviour, INetworkRunnerCallbacks
 
     public void OnInput(NetworkRunner runner, NetworkInput input)
     {
-        var data = new NetworkInputData();
+        NetworkInputData data = new NetworkInputData();
 
         if (Input.GetKey(KeyCode.W))
             data.direction += Vector3.forward;
@@ -97,6 +104,9 @@ public class BasicSpawner : MonoBehaviour, INetworkRunnerCallbacks
 
         if (Input.GetKey(KeyCode.D))
             data.direction += Vector3.right;
+
+        data.buttons.Set(NetworkInputData.MOUSEBUTTON0, _mouseButton0);
+        _mouseButton0 = false;
 
         input.Set(data);
     }
@@ -120,20 +130,18 @@ public class BasicSpawner : MonoBehaviour, INetworkRunnerCallbacks
     {
         if (runner.IsServer)
         {
-            // Create a unique position for the player
-            //Vector3 spawnPosition = new Vector3((player.RawEncoded % runner.Config.Simulation.PlayerCount) * 3, 1, 0);
-            NetworkObject networkPlayerObject = runner.Spawn(_playerPrefab, transform.position, Quaternion.identity, player);
+            NetworkObject networkPlayerObject = runner.Spawn(networkPlayerPrefab, transform.position, Quaternion.identity, player);
             // Keep track of the player avatars for easy access
-            _spawnedCharacters.Add(player, networkPlayerObject);
+            spawnedCharactersDictionary.Add(player, networkPlayerObject);
         }
     }
 
     public void OnPlayerLeft(NetworkRunner runner, PlayerRef player)
     {
-        if (_spawnedCharacters.TryGetValue(player, out NetworkObject networkObject))
+        if (spawnedCharactersDictionary.TryGetValue(player, out NetworkObject networkObject))
         {
             runner.Despawn(networkObject);
-            _spawnedCharacters.Remove(player);
+            spawnedCharactersDictionary.Remove(player);
         }
     }
 
