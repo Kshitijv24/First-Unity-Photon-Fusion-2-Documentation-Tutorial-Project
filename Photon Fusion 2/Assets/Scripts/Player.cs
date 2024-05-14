@@ -6,6 +6,8 @@ public class Player : NetworkBehaviour
 {
     [SerializeField] float moveSpeed = 100f;
     [SerializeField] Ball ballPrefab;
+    [SerializeField] private PhysxBall _prefabPhysxBall;
+
     [Networked] TickTimer delay { get; set; }
 
     Vector3 forward;
@@ -43,6 +45,18 @@ public class Player : NetworkBehaviour
                             // Initialize the Ball before synchronizing it
                             o.GetComponent<Ball>().Init();
                         });
+                }
+                else if (data.buttons.IsSet(NetworkInputData.MOUSEBUTTON1))
+                {
+                    delay = TickTimer.CreateFromSeconds(Runner, 0.5f);
+                    Runner.Spawn(_prefabPhysxBall,
+                      transform.position + forward,
+                      Quaternion.LookRotation(forward),
+                      Object.InputAuthority,
+                      (runner, o) =>
+                      {
+                          o.GetComponent<PhysxBall>().Init(10 * forward);
+                      });
                 }
             }
         }

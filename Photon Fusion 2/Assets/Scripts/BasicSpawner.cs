@@ -1,4 +1,5 @@
 using Fusion;
+using Fusion.Addons.Physics;
 using Fusion.Sockets;
 using System;
 using System.Collections;
@@ -13,11 +14,13 @@ public class BasicSpawner : MonoBehaviour, INetworkRunnerCallbacks
 
     private NetworkRunner networkRunner;
     private bool _mouseButton0;
+    private bool _mouseButton1;
 
     async void StartGame(GameMode gameMode)
     {
         // Create the Fusion runner and let it know that we will be providing user input
         networkRunner = gameObject.AddComponent<NetworkRunner>();
+        gameObject.AddComponent<RunnerSimulatePhysics3D>();
         networkRunner.ProvideInput = true;
 
         // Create the NetworkSceneInfo from the current scene
@@ -42,6 +45,7 @@ public class BasicSpawner : MonoBehaviour, INetworkRunnerCallbacks
     private void Update()
     {
         _mouseButton0 = _mouseButton0 | Input.GetMouseButton(0);
+        _mouseButton1 = _mouseButton1 || Input.GetMouseButton(1);
     }
 
     private void OnGUI()
@@ -107,6 +111,8 @@ public class BasicSpawner : MonoBehaviour, INetworkRunnerCallbacks
 
         data.buttons.Set(NetworkInputData.MOUSEBUTTON0, _mouseButton0);
         _mouseButton0 = false;
+        data.buttons.Set(NetworkInputData.MOUSEBUTTON1, _mouseButton1);
+        _mouseButton1 = false;
 
         input.Set(data);
     }
