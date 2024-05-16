@@ -20,8 +20,8 @@ public class BasicSpawner : MonoBehaviour, INetworkRunnerCallbacks
     {
         // Create the Fusion runner and let it know that we will be providing user input
         networkRunner = gameObject.AddComponent<NetworkRunner>();
-        gameObject.AddComponent<RunnerSimulatePhysics3D>();
         networkRunner.ProvideInput = true;
+        gameObject.AddComponent<RunnerSimulatePhysics3D>();
 
         // Create the NetworkSceneInfo from the current scene
         SceneRef sceneRef = SceneRef.FromIndex(SceneManager.GetActiveScene().buildIndex);

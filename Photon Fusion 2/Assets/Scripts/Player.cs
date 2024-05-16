@@ -4,19 +4,23 @@ using UnityEditor;
 
 public class Player : NetworkBehaviour
 {
+    public Material _material;
+
     [SerializeField] float moveSpeed = 100f;
     [SerializeField] Ball ballPrefab;
     [SerializeField] private PhysxBall _prefabPhysxBall;
 
     [Networked] TickTimer delay { get; set; }
+    [Networked] public bool spawnedProjectile { get; set; }
 
     Vector3 forward;
-
     NetworkCharacterController networkCharacterController;
+    ChangeDetector _changeDetector;
 
     private void Awake()
     {
         networkCharacterController = GetComponent<NetworkCharacterController>();
+        _material = GetComponentInChildren<MeshRenderer>().material;
         forward = transform.forward;
     }
 
@@ -58,6 +62,24 @@ public class Player : NetworkBehaviour
                           o.GetComponent<PhysxBall>().Init(10 * forward);
                       });
                 }
+            }
+        }
+    }
+
+    public override void Spawned()
+    {
+        _changeDetector = GetChangeDetector(ChangeDetector.Source.SimulationState);
+    }
+
+    public override void Render()
+    {
+        foreach (string change in _changeDetector.DetectChanges(this))
+        {
+            switch (change)
+            {
+                case nameof(spawnedProjectile):
+                    _material.color = Color.white;
+                    break;
             }
         }
     }
