@@ -10,8 +10,8 @@ public class Player : NetworkBehaviour
     [SerializeField] Ball ballPrefab;
     [SerializeField] private PhysxBall _prefabPhysxBall;
 
-    [Networked] TickTimer delay { get; set; }
     [Networked] public bool spawnedProjectile { get; set; }
+    [Networked] TickTimer delay { get; set; }
 
     Vector3 forward;
     NetworkCharacterController networkCharacterController;
@@ -49,6 +49,7 @@ public class Player : NetworkBehaviour
                             // Initialize the Ball before synchronizing it
                             o.GetComponent<Ball>().Init();
                         });
+                    spawnedProjectile = !spawnedProjectile;
                 }
                 else if (data.buttons.IsSet(NetworkInputData.MOUSEBUTTON1))
                 {
@@ -61,6 +62,7 @@ public class Player : NetworkBehaviour
                       {
                           o.GetComponent<PhysxBall>().Init(10 * forward);
                       });
+                    spawnedProjectile = !spawnedProjectile;
                 }
             }
         }
@@ -82,5 +84,7 @@ public class Player : NetworkBehaviour
                     break;
             }
         }
+
+        _material.color = Color.Lerp(_material.color, Color.blue, Time.deltaTime);
     }
 }
